@@ -22,65 +22,65 @@ Different layers catch different cases:
 ### Layer 1: Entry Point Validation
 **Purpose:** Reject obviously invalid input at API boundary
 
-```typescript
-function createProject(name: string, workingDirectory: string) {
-  if (!workingDirectory || workingDirectory.trim() === '') {
-    throw new Error('workingDirectory cannot be empty');
-  }
-  if (!existsSync(workingDirectory)) {
-    throw new Error(`workingDirectory does not exist: ${workingDirectory}`);
-  }
-  if (!statSync(workingDirectory).isDirectory()) {
-    throw new Error(`workingDirectory is not a directory: ${workingDirectory}`);
-  }
-  // ... proceed
+```java
+Project createProject(String name, Path workingDirectory) {
+    if (workingDirectory == null || workingDirectory.toString().isBlank()) {
+        throw new IllegalArgumentException("workingDirectory cannot be empty");
+    }
+    if (!Files.exists(workingDirectory)) {
+        throw new IllegalArgumentException("workingDirectory does not exist: " + workingDirectory);
+    }
+    if (!Files.isDirectory(workingDirectory)) {
+        throw new IllegalArgumentException("workingDirectory is not a directory: " + workingDirectory);
+    }
+    // ... proceed
 }
 ```
+
+`Objects.requireNonNull` with a message is the right tool for plain null checks; explicit `IllegalArgumentException` for everything richer.
 
 ### Layer 2: Business Logic Validation
 **Purpose:** Ensure data makes sense for this operation
 
-```typescript
-function initializeWorkspace(projectDir: string, sessionId: string) {
-  if (!projectDir) {
-    throw new Error('projectDir required for workspace initialization');
-  }
-  // ... proceed
+```java
+void initializeWorkspace(Path projectDir, String sessionId) {
+    if (projectDir == null) {
+        throw new IllegalStateException("projectDir required for workspace initialization");
+    }
+    // ... proceed
 }
 ```
 
 ### Layer 3: Environment Guards
 **Purpose:** Prevent dangerous operations in specific contexts
 
-```typescript
-async function gitInit(directory: string) {
-  // In tests, refuse git init outside temp directories
-  if (process.env.NODE_ENV === 'test') {
-    const normalized = normalize(resolve(directory));
-    const tmpDir = normalize(resolve(tmpdir()));
+```java
+void gitInit(Path directory) throws IOException, InterruptedException {
+    // In tests, refuse git init outside the temp directory
+    if (Boolean.getBoolean("test.mode")) { // set by surefire: <test.mode>true</test.mode>
+        Path normalized = directory.toAbsolutePath().normalize();
+        Path tmpDir = Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize();
 
-    if (!normalized.startsWith(tmpDir)) {
-      throw new Error(
-        `Refusing git init outside temp dir during tests: ${directory}`
-      );
+        if (!normalized.startsWith(tmpDir)) {
+            throw new IllegalStateException(
+                "Refusing git init outside temp dir during tests: " + directory);
+        }
     }
-  }
-  // ... proceed
+    // ... proceed
 }
 ```
 
 ### Layer 4: Debug Instrumentation
 **Purpose:** Capture context for forensics
 
-```typescript
-async function gitInit(directory: string) {
-  const stack = new Error().stack;
-  logger.debug('About to git init', {
-    directory,
-    cwd: process.cwd(),
-    stack,
-  });
-  // ... proceed
+```java
+void gitInit(Path directory) throws IOException, InterruptedException {
+    if (LOG.isLoggable(Level.FINE)) {
+        LOG.log(Level.FINE,
+            "About to git init: dir=" + directory + ", cwd=" + Path.of("").toAbsolutePath(),
+            new Throwable("call site")); // logs the full stack trace
+    }
+    // ... proceed
 }
 ```
 
@@ -95,18 +95,20 @@ When you find a bug:
 
 ## Example from Session
 
-Bug: Empty `projectDir` caused `git init` in source code
+Bug: Empty `projectDir` caused `git init` in the source tree
 
 **Data flow:**
-1. Test setup → empty string
-2. `Project.create(name, '')`
-3. `WorkspaceManager.createWorkspace('')`
-4. `git init` runs in `process.cwd()`
+1. Test setup → empty path
+2. `Project.create(name, Path.of(""))`
+3. `WorkspaceManager.createWorkspace(emptyPath)`
+4. `git init` runs in the process working directory — the source checkout!
+
+(`Path.of("")` resolves to the current working directory — the Java twin of the empty-string `cwd` bug.)
 
 **Four layers added:**
 - Layer 1: `Project.create()` validates not empty/exists/writable
 - Layer 2: `WorkspaceManager` validates projectDir not empty
-- Layer 3: `WorktreeManager` refuses git init outside tmpdir in tests
+- Layer 3: `WorktreeManager` refuses git init outside `java.io.tmpdir` when `test.mode` is set
 - Layer 4: Stack trace logging before git init
 
 **Result:** All 1847 tests passed, bug impossible to reproduce

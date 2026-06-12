@@ -65,11 +65,11 @@ Each agent gets:
 
 ### 3. Dispatch in Parallel
 
-```typescript
+```
 // In Claude Code / AI environment
-Task("Fix agent-tool-abort.test.ts failures")
-Task("Fix batch-completion-behavior.test.ts failures")
-Task("Fix tool-approval-race-conditions.test.ts failures")
+Task("Fix AgentToolAbortTest failures")
+Task("Fix BatchCompletionBehaviorTest failures")
+Task("Fix ToolApprovalRaceConditionTest failures")
 // All three run concurrently
 ```
 
@@ -89,7 +89,8 @@ Good agent prompts are:
 3. **Specific about output** - What should the agent return?
 
 ```markdown
-Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
+Fix the 3 failing tests in agents/src/test/java/com/example/agents/AgentToolAbortTest.java
+(run with: mvn -pl agents test -Dtest=AgentToolAbortTest):
 
 1. "should abort tool with partial output capture" - expects 'interrupted at' in message
 2. "should handle mixed completed and aborted tools" - fast tool aborted instead of completed
@@ -112,7 +113,7 @@ Return: Summary of what you found and what you fixed.
 ## Common Mistakes
 
 **❌ Too broad:** "Fix all the tests" - agent gets lost
-**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
+**✅ Specific:** "Fix AgentToolAbortTest" - focused scope
 
 **❌ No context:** "Fix the race condition" - agent doesn't know where
 **✅ Context:** Paste the error messages and test names
@@ -135,17 +136,17 @@ Return: Summary of what you found and what you fixed.
 **Scenario:** 6 test failures across 3 files after major refactoring
 
 **Failures:**
-- agent-tool-abort.test.ts: 3 failures (timing issues)
-- batch-completion-behavior.test.ts: 2 failures (tools not executing)
-- tool-approval-race-conditions.test.ts: 1 failure (execution count = 0)
+- AgentToolAbortTest: 3 failures (timing issues)
+- BatchCompletionBehaviorTest: 2 failures (tools not executing)
+- ToolApprovalRaceConditionTest: 1 failure (execution count = 0)
 
 **Decision:** Independent domains - abort logic separate from batch completion separate from race conditions
 
 **Dispatch:**
 ```
-Agent 1 → Fix agent-tool-abort.test.ts
-Agent 2 → Fix batch-completion-behavior.test.ts
-Agent 3 → Fix tool-approval-race-conditions.test.ts
+Agent 1 → Fix AgentToolAbortTest
+Agent 2 → Fix BatchCompletionBehaviorTest
+Agent 3 → Fix ToolApprovalRaceConditionTest
 ```
 
 **Results:**

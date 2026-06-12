@@ -133,26 +133,26 @@ Task tool (general-purpose):
 
 ```
 ### Strengths
-- Clean database schema with proper migrations (db.ts:15-42)
+- Clean database schema with proper migrations (SchemaMigrator.java:15-42)
 - Comprehensive test coverage (18 tests, all edge cases)
-- Good error handling with fallbacks (summarizer.ts:85-92)
+- Good error handling with fallbacks (Summarizer.java:85-92)
 
 ### Issues
 
 #### Important
 1. **Missing help text in CLI wrapper**
-   - File: index-conversations:1-31
+   - File: IndexConversationsCli.java:1-31
    - Issue: No --help flag, users won't discover --concurrency
    - Fix: Add --help case with usage examples
 
 2. **Date validation missing**
-   - File: search.ts:25-27
+   - File: SearchService.java:25-27
    - Issue: Invalid dates silently return no results
-   - Fix: Validate ISO format, throw error with example
+   - Fix: Parse with `LocalDate.parse`, let `DateTimeParseException` surface with an example in the message
 
 #### Minor
 1. **Progress indicators**
-   - File: indexer.ts:130
+   - File: Indexer.java:130
    - Issue: No "X of Y" counter for long operations
    - Impact: Users don't know how long to wait
 

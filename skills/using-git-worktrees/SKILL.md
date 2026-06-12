@@ -116,27 +116,25 @@ cd "$path"
 Auto-detect and run appropriate setup:
 
 ```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
+# Java (Maven) — no install step; warm the local repo and verify it compiles
+if [ -f pom.xml ]; then mvn -q test-compile; fi
 
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
-
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
-
-# Go
-if [ -f go.mod ]; then go mod download; fi
+# Non-Java fallbacks
+if [ -f package.json ]; then npm install; fi                       # Node.js
+if [ -f Cargo.toml ]; then cargo build; fi                         # Rust
+if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  # Python
+if [ -f go.mod ]; then go mod download; fi                         # Go
 ```
+
+Maven worktrees share the local repository (`~/.m2`), so a fresh worktree costs only a compile — no dependency re-download.
 
 ## Step 4: Verify Clean Baseline
 
 Run tests to ensure workspace starts clean:
 
 ```bash
-# Use project-appropriate command
-npm test / cargo test / pytest / go test ./...
+mvn test
+# (non-Java projects: npm test / cargo test / pytest / go test ./...)
 ```
 
 **If tests fail:** Report failures, ask whether to proceed or investigate.
@@ -167,7 +165,7 @@ Ready to implement <feature-name>
 | Directory not ignored | Add to .gitignore + commit |
 | Permission error on create | Sandbox fallback, work in place |
 | Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
+| No pom.xml/package.json/Cargo.toml | Skip setup step |
 
 ## Common Mistakes
 

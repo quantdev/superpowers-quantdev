@@ -10,95 +10,98 @@ Flaky tests often guess at timing with arbitrary delays. This creates race condi
 
 ```dot
 digraph when_to_use {
-    "Test uses setTimeout/sleep?" [shape=diamond];
+    "Test uses Thread.sleep?" [shape=diamond];
     "Testing timing behavior?" [shape=diamond];
     "Document WHY timeout needed" [shape=box];
     "Use condition-based waiting" [shape=box];
 
-    "Test uses setTimeout/sleep?" -> "Testing timing behavior?" [label="yes"];
+    "Test uses Thread.sleep?" -> "Testing timing behavior?" [label="yes"];
     "Testing timing behavior?" -> "Document WHY timeout needed" [label="yes"];
     "Testing timing behavior?" -> "Use condition-based waiting" [label="no"];
 }
 ```
 
 **Use when:**
-- Tests have arbitrary delays (`setTimeout`, `sleep`, `time.sleep()`)
+- Tests have arbitrary delays (`Thread.sleep`, `TimeUnit.SECONDS.sleep`, `CountDownLatch.await` with a guessed timeout used as a delay)
 - Tests are flaky (pass sometimes, fail under load)
-- Tests timeout when run in parallel
-- Waiting for async operations to complete
+- Tests time out when run in parallel (surefire forks competing for CPU)
+- Waiting for async operations: `ExecutorService` tasks, `CompletableFuture` side effects, message listeners, container startup
 
 **Don't use when:**
-- Testing actual timing behavior (debounce, throttle intervals)
-- Always document WHY if using arbitrary timeout
+- Testing actual timing behavior (debounce, throttle, scheduler intervals)
+- Always document WHY if using an arbitrary timeout
 
 ## Core Pattern
 
-```typescript
+```java
 // ❌ BEFORE: Guessing at timing
-await new Promise(r => setTimeout(r, 50));
-const result = getResult();
-expect(result).toBeDefined();
+Thread.sleep(50);
+var result = service.getResult();
+assertNotNull(result);
 
 // ✅ AFTER: Waiting for condition
-await waitFor(() => getResult() !== undefined);
-const result = getResult();
-expect(result).toBeDefined();
+waitFor(() -> service.getResult() != null, "result available");
+assertNotNull(service.getResult());
 ```
 
 ## Quick Patterns
 
 | Scenario | Pattern |
 |----------|---------|
-| Wait for event | `waitFor(() => events.find(e => e.type === 'DONE'))` |
-| Wait for state | `waitFor(() => machine.state === 'ready')` |
-| Wait for count | `waitFor(() => items.length >= 5)` |
-| Wait for file | `waitFor(() => fs.existsSync(path))` |
-| Complex condition | `waitFor(() => obj.ready && obj.value > 10)` |
+| Wait for event | `waitFor(() -> events.stream().anyMatch(e -> e.type() == DONE), "DONE event")` |
+| Wait for state | `waitFor(() -> machine.state() == State.READY, "machine ready")` |
+| Wait for count | `waitFor(() -> items.size() >= 5, "5 items")` |
+| Wait for file | `waitFor(() -> Files.exists(path), "file " + path)` |
+| Complex condition | `waitFor(() -> obj.isReady() && obj.value() > 10, "ready with value > 10")` |
 
 ## Implementation
 
-Generic polling function:
-```typescript
-async function waitFor<T>(
-  condition: () => T | undefined | null | false,
-  description: string,
-  timeoutMs = 5000
-): Promise<T> {
-  const startTime = Date.now();
+Generic polling helper — plain JDK, no dependency needed (see `ConditionBasedWaiting.java` in this directory for the complete version with a value-returning variant):
 
-  while (true) {
-    const result = condition();
-    if (result) return result;
+```java
+static void waitFor(BooleanSupplier condition, String description) {
+    waitFor(condition, description, Duration.ofSeconds(5));
+}
 
-    if (Date.now() - startTime > timeoutMs) {
-      throw new Error(`Timeout waiting for ${description} after ${timeoutMs}ms`);
+static void waitFor(BooleanSupplier condition, String description, Duration timeout) {
+    long deadline = System.nanoTime() + timeout.toNanos();
+    while (!condition.getAsBoolean()) {
+        if (System.nanoTime() > deadline) {
+            throw new AssertionError(
+                "Timeout waiting for " + description + " after " + timeout.toMillis() + "ms");
+        }
+        try {
+            Thread.sleep(10); // Poll every 10ms
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted waiting for " + description, e);
+        }
     }
-
-    await new Promise(r => setTimeout(r, 10)); // Poll every 10ms
-  }
 }
 ```
 
-See `condition-based-waiting-example.ts` in this directory for complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`) from actual debugging session.
+If Awaitility is *already* on the project's classpath, use it (`await().atMost(...).until(...)`) — it's the same pattern with better failure reporting. Do not add it as a new dependency without asking your human partner (see superpowers:java-development dependency gate); the helper above is enough.
 
 ## Common Mistakes
 
-**❌ Polling too fast:** `setTimeout(check, 1)` - wastes CPU
+**❌ Polling too fast:** `Thread.sleep(1)` — wastes CPU
 **✅ Fix:** Poll every 10ms
 
 **❌ No timeout:** Loop forever if condition never met
 **✅ Fix:** Always include timeout with clear error
 
-**❌ Stale data:** Cache state before loop
-**✅ Fix:** Call getter inside loop for fresh data
+**❌ Stale data:** Capture state once before the loop
+**✅ Fix:** Call the getter inside the loop for fresh data
+
+**❌ Swallowing `InterruptedException`:** `catch (InterruptedException e) {}`
+**✅ Fix:** Re-interrupt the thread and fail the wait
 
 ## When Arbitrary Timeout IS Correct
 
-```typescript
-// Tool ticks every 100ms - need 2 ticks to verify partial output
-await waitForEvent(manager, 'TOOL_STARTED'); // First: wait for condition
-await new Promise(r => setTimeout(r, 200));   // Then: wait for timed behavior
-// 200ms = 2 ticks at 100ms intervals - documented and justified
+```java
+// Scheduler ticks every 100ms — need 2 ticks to verify partial output
+waitFor(() -> recorder.sawEvent(TOOL_STARTED), "tool started"); // First: wait for condition
+Thread.sleep(200); // Then: wait for timed behavior — 200ms = 2 ticks at 100ms, documented
 ```
 
 **Requirements:**

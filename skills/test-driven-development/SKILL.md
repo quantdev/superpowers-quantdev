@@ -73,36 +73,42 @@ digraph tdd_cycle {
 Write one minimal test showing what should happen.
 
 <Good>
-```typescript
-test('retries failed operations 3 times', async () => {
-  let attempts = 0;
-  const operation = () => {
-    attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
-  };
+```java
+@Test
+void retriesFailedOperationsThreeTimes() {
+    AtomicInteger attempts = new AtomicInteger();
+    Supplier<String> operation = () -> {
+        if (attempts.incrementAndGet() < 3) {
+            throw new IllegalStateException("fail");
+        }
+        return "success";
+    };
 
-  const result = await retryOperation(operation);
+    String result = Retry.retryOperation(operation);
 
-  expect(result).toBe('success');
-  expect(attempts).toBe(3);
-});
+    assertEquals("success", result);
+    assertEquals(3, attempts.get());
+}
 ```
 Clear name, tests real behavior, one thing
 </Good>
 
 <Bad>
-```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
+```java
+@Test
+void retryWorks() {
+    Supplier<String> mock = mock(Supplier.class);
+    when(mock.get())
+        .thenThrow(new IllegalStateException())
+        .thenThrow(new IllegalStateException())
+        .thenReturn("success");
+
+    Retry.retryOperation(mock);
+
+    verify(mock, times(3)).get();
+}
 ```
-Vague name, tests mock not code
+Vague name, tests Mockito's stubbing not your code
 </Bad>
 
 **Requirements:**
@@ -115,11 +121,11 @@ Vague name, tests mock not code
 **MANDATORY. Never skip.**
 
 ```bash
-npm test path/to/test.test.ts
+mvn -pl <module> test -Dtest=RetryTest#retriesFailedOperationsThreeTimes
 ```
 
 Confirm:
-- Test fails (not errors)
+- Test fails (assertion failure, not a compile error)
 - Failure message is expected
 - Fails because feature missing (not typos)
 
@@ -127,37 +133,38 @@ Confirm:
 
 **Test errors?** Fix error, re-run until it fails correctly.
 
+**Won't compile because the API doesn't exist yet?** That's Java's version of RED for a brand-new class or method. Create the minimal skeleton (method that throws `UnsupportedOperationException`) so the test compiles, then watch it fail on the assertion. The skeleton is not implementation — it exists only to let the test fail for the right reason.
+
 ### GREEN - Minimal Code
 
 Write simplest code to pass the test.
 
 <Good>
-```typescript
-async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === 2) throw e;
+```java
+static <T> T retryOperation(Supplier<T> fn) {
+    RuntimeException last = null;
+    for (int i = 0; i < 3; i++) {
+        try {
+            return fn.get();
+        } catch (RuntimeException e) {
+            last = e;
+        }
     }
-  }
-  throw new Error('unreachable');
+    throw last;
 }
 ```
 Just enough to pass
 </Good>
 
 <Bad>
-```typescript
-async function retryOperation<T>(
-  fn: () => Promise<T>,
-  options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
-): Promise<T> {
-  // YAGNI
+```java
+static <T> T retryOperation(
+        Supplier<T> fn,
+        int maxRetries,
+        BackoffStrategy backoff,
+        IntConsumer onRetry,
+        Duration timeout) {
+    // YAGNI
 }
 ```
 Over-engineered
@@ -170,13 +177,15 @@ Don't add features, refactor other code, or "improve" beyond the test.
 **MANDATORY.**
 
 ```bash
-npm test path/to/test.test.ts
+mvn -pl <module> test -Dtest=RetryTest
 ```
+
+Then run the module's full test suite (`mvn -pl <module> test`) before committing.
 
 Confirm:
 - Test passes
 - Other tests still pass
-- Output pristine (no errors, warnings)
+- Output pristine (no errors, warnings, no tests skipped)
 
 **Test fails?** Fix code, not test.
 
@@ -199,8 +208,8 @@ Next failing test for next feature.
 
 | Quality | Good | Bad |
 |---------|------|-----|
-| **Minimal** | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
-| **Clear** | Name describes behavior | `test('test1')` |
+| **Minimal** | One thing. "And" in name? Split it. | `validatesEmailAndDomainAndWhitespace()` |
+| **Clear** | Name describes behavior | `test1()` |
 | **Shows intent** | Demonstrates desired API | Obscures what code should do |
 
 ## Why Order Matters
@@ -292,33 +301,34 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 **Bug:** Empty email accepted
 
 **RED**
-```typescript
-test('rejects empty email', async () => {
-  const result = await submitForm({ email: '' });
-  expect(result.error).toBe('Email required');
-});
+```java
+@Test
+void rejectsEmptyEmail() {
+    FormResult result = formService.submit(new FormData(""));
+    assertEquals("Email required", result.error());
+}
 ```
 
 **Verify RED**
 ```bash
-$ npm test
-FAIL: expected 'Email required', got undefined
+$ mvn -pl forms test -Dtest=FormServiceTest#rejectsEmptyEmail
+[ERROR] rejectsEmptyEmail  expected: <Email required> but was: <null>
 ```
 
 **GREEN**
-```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: 'Email required' };
-  }
-  // ...
+```java
+FormResult submit(FormData data) {
+    if (data.email() == null || data.email().isBlank()) {
+        return FormResult.error("Email required");
+    }
+    // ...
 }
 ```
 
 **Verify GREEN**
 ```bash
-$ npm test
-PASS
+$ mvn -pl forms test -Dtest=FormServiceTest#rejectsEmptyEmail
+[INFO] BUILD SUCCESS
 ```
 
 **REFACTOR**

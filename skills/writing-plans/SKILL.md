@@ -57,6 +57,8 @@ This structure informs the task decomposition. Each task should produce self-con
 
 **Tech Stack:** [Key technologies/libraries]
 
+**Conventions:** [For Java projects: "Follow superpowers:java-development — Maven multi-module, JUnit 5, no new dependencies without explicit approval, Spotless/match-existing formatting." Subagents executing tasks have no session context, so the plan must carry this pointer.]
+
 ---
 ```
 
@@ -65,40 +67,46 @@ This structure informs the task decomposition. Each task should produce self-con
 ````markdown
 ### Task N: [Component Name]
 
+**Module:** `exact-module-name` (for multi-module Maven projects)
+
 **Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
+- Create: `module/src/main/java/com/example/feature/Thing.java`
+- Modify: `module/src/main/java/com/example/feature/Existing.java:123-145`
+- Test: `module/src/test/java/com/example/feature/ThingTest.java`
 
 - [ ] **Step 1: Write the failing test**
 
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
+```java
+@Test
+void specificBehavior() {
+    var result = Thing.function(input);
+    assertEquals(expected, result);
+}
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
+Run: `mvn -pl module test -Dtest=ThingTest#specificBehavior`
+Expected: FAIL with assertion error (if the class/method doesn't exist yet, create the minimal skeleton throwing `UnsupportedOperationException` so it compiles and fails the assertion)
 
 - [ ] **Step 3: Write minimal implementation**
 
-```python
-def function(input):
-    return expected
+```java
+static Result function(Input input) {
+    return expected;
+}
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
+Run: `mvn -pl module test -Dtest=ThingTest#specificBehavior`
+Expected: BUILD SUCCESS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tests/path/test.py src/path/file.py
+git add module/src/test/java/com/example/feature/ThingTest.java \
+        module/src/main/java/com/example/feature/Thing.java
 git commit -m "feat: add specific feature"
 ```
 ````
