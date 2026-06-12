@@ -22,6 +22,7 @@ Task tool (general-purpose):
 - Are units decomposed so they can be understood and tested independently?
 - Is the implementation following the file structure from the plan?
 - **Conformance:** if a DESIGN_DOC is provided, does the change match the approved decomposition — code in its designed module, dependencies in declared directions? Evidence first: list what the change actually touches, then judge. Structural drift is a Critical finding (the fix may be amending the design, but that decision belongs upstream, not silently in code).
+- **Architecture rules:** check the change against the "Generation-time rules" block in skills/designing-decomposition/PRINCIPLES.md (read it — it's a registry that grows). Evidence first: list the mutations, `extends` clauses, and public members the change introduces, then judge each against the rules. Unjustified violations are Important findings; the implementer's own justifications (in their report) count as evidence to weigh, not auto-passes.
 - Did this implementation create new files that are already large, or significantly grow existing files? (Don't flag pre-existing file sizes — focus on what this change contributed.)
 
 **Code reviewer returns:** Strengths, Issues (Critical/Important/Minor), Assessment

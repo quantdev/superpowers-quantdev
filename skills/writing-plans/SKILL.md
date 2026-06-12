@@ -62,7 +62,7 @@ Each task should produce self-contained changes that make sense independently. I
 
 **Design:** [Path to the approved decomposition design, e.g. `docs/superpowers/design/YYYY-MM-DD-<feature>-decomposition.md` — or "decomposition gate skipped: <reason>"]
 
-**Conventions:** [For Java projects: "Follow superpowers:java-development — Maven multi-module, JUnit 5, no new dependencies without explicit approval, Spotless/match-existing formatting. Hermetic rules: side-effect-free, Tell-Don't-Ask, minimal public surface." Subagents executing tasks have no session context, so the plan must carry this pointer.]
+**Conventions:** [For Java projects: "Follow superpowers:java-development — Maven multi-module, JUnit 5, no new dependencies without explicit approval, Spotless/match-existing formatting." Then paste the current "Generation-time rules" block from `skills/designing-decomposition/PRINCIPLES.md` verbatim. Subagents executing tasks have no session context — the plan must carry the conventions and the rules as they stood when it was written.]
 
 ---
 ```
@@ -141,6 +141,8 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 **2. Placeholder scan:** Search your plan for red flags — any of the patterns from the "No Placeholders" section above. Fix them.
 
 **3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
+
+**4. Architecture-rules pass:** Plan code is code — the code you wrote into the plan is the code that ships, and this is the cheapest point in the pipeline to fix it. Check every code block against the Generation-time rules in `skills/designing-decomposition/PRINCIPLES.md`: argument mutation, pull-data-and-decide callers, over-exposed members, concrete inheritance. The implementer is instructed to flag plan code that violates the rules — don't make them.
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 
