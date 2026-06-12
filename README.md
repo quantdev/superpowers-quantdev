@@ -1,5 +1,10 @@
 # Superpowers
 
+> **This is the `superpowers-quantdev` fork** — Java/Maven-centric, with a hermetic
+> design gate and an extensible architecture-rules registry. To install THIS fork,
+> follow [INSTALL.md](INSTALL.md), **not** the upstream instructions below (those
+> install upstream superpowers from the official marketplace).
+
 Superpowers is a complete software development methodology for your coding agents, built on top of a set of composable skills and some initial instructions that make sure your agent uses them.
 
 ## Quickstart
