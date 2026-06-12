@@ -15,6 +15,8 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** If working in an isolated worktree, it should have been created via the `superpowers:using-git-worktrees` skill at execution time.
 
+**Gate — already decomposed?** Planning requires an approved decomposition design in `docs/superpowers/design/`. If none exists, run the scope test in superpowers:designing-decomposition: if it says run, invoke that skill first; if it says skip, announce the skip and proceed. This guard exists because work can arrive here directly (ready-made spec) without passing through brainstorming.
+
 **Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
 
@@ -24,14 +26,15 @@ If the spec covers multiple independent subsystems, it should have been broken i
 
 ## File Structure
 
-Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
+Derive the file structure from the approved decomposition design — the plan maps the design's modules onto concrete files; it does not invent structure. Module boundaries, interfaces, and dependency directions were decided and reviewed at the design gate.
 
-- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
-- You reason best about code you can hold in context at once, and your edits are more reliable when files are focused. Prefer smaller, focused files over large ones that do too much.
-- Files that change together should live together. Split by responsibility, not by technical layer.
-- In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure - but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
+Within that frame, file-level judgment is still yours:
 
-This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
+- Each file should have one clear responsibility. You reason best about code you can hold in context at once — prefer smaller, focused files over large ones that do too much.
+- Files that change together should live together.
+- In existing codebases, follow established patterns. If a file you're modifying has grown unwieldy, including a split in the plan is reasonable — within its module's boundary.
+
+Each task should produce self-contained changes that make sense independently. If mapping tasks to files reveals the decomposition itself is wrong, stop — that goes back through designing-decomposition's amendment path, not around it.
 
 ## Bite-Sized Task Granularity
 
@@ -57,7 +60,9 @@ This structure informs the task decomposition. Each task should produce self-con
 
 **Tech Stack:** [Key technologies/libraries]
 
-**Conventions:** [For Java projects: "Follow superpowers:java-development — Maven multi-module, JUnit 5, no new dependencies without explicit approval, Spotless/match-existing formatting." Subagents executing tasks have no session context, so the plan must carry this pointer.]
+**Design:** [Path to the approved decomposition design, e.g. `docs/superpowers/design/YYYY-MM-DD-<feature>-decomposition.md` — or "decomposition gate skipped: <reason>"]
+
+**Conventions:** [For Java projects: "Follow superpowers:java-development — Maven multi-module, JUnit 5, no new dependencies without explicit approval, Spotless/match-existing formatting. Hermetic rules: side-effect-free, Tell-Don't-Ask, minimal public surface." Subagents executing tasks have no session context, so the plan must carry this pointer.]
 
 ---
 ```
@@ -67,7 +72,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ````markdown
 ### Task N: [Component Name]
 
-**Module:** `exact-module-name` (for multi-module Maven projects)
+**Module:** `exact-module-name` (from the decomposition design; for multi-module Maven projects)
 
 **Files:**
 - Create: `module/src/main/java/com/example/feature/Thing.java`

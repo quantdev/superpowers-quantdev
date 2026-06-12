@@ -3,9 +3,12 @@ name: brainstorming
 description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
 ---
 
-# Brainstorming Ideas Into Designs
+# Brainstorming Ideas Into Specs
 
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+Help turn ideas into fully formed specs through natural collaborative dialogue. A spec
+describes WHAT the system does — behavior, constraints, success criteria. HOW the code
+is structured (modules, boundaries, interfaces) is decided afterward by
+superpowers:designing-decomposition; don't lock structure in here.
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
 
@@ -29,7 +32,7 @@ You MUST create a task for each of these items and complete them in order:
 6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+9. **Transition to structure** — invoke designing-decomposition skill to decide module boundaries before any plan
 
 ## Process Flow
 
@@ -45,7 +48,7 @@ digraph brainstorming {
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
     "User reviews spec?" [shape=diamond];
-    "Invoke writing-plans skill" [shape=doublecircle];
+    "Invoke designing-decomposition skill" [shape=doublecircle];
 
     "Explore project context" -> "Visual questions ahead?";
     "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
@@ -59,11 +62,11 @@ digraph brainstorming {
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
+    "User reviews spec?" -> "Invoke designing-decomposition skill" [label="approved"];
 }
 ```
 
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+**The terminal state is invoking designing-decomposition.** Do NOT invoke frontend-design, mcp-builder, writing-plans, or any other implementation skill. The ONLY skill you invoke after brainstorming is designing-decomposition — it decides structure, then hands off to writing-plans itself.
 
 ## The Process
 
@@ -88,15 +91,16 @@ digraph brainstorming {
 - Once you believe you understand what you're building, present the design
 - Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
 - Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
+- Cover: behavior, data flow, error handling, constraints, success criteria — what the system does. Approach-level architecture is fine; module boundaries and interfaces are not decided here
 - Be ready to go back and clarify if something doesn't make sense
 
-**Design for isolation and clarity:**
+**Where structure gets decided:**
 
-- Break the system into smaller units that each have one clear purpose, communicate through well-defined interfaces, and can be understood and tested independently
-- For each unit, you should be able to answer: what does it do, how do you use it, and what does it depend on?
-- Can someone understand what a unit does without reading its internals? Can you change the internals without breaking consumers? If not, the boundaries need work.
-- Smaller, well-bounded units are also easier for you to work with - you reason better about code you can hold in context at once, and your edits are more reliable when files are focused. When a file grows large, that's often a signal that it's doing too much.
+- Module boundaries, interfaces, and code organization are decided in
+  superpowers:designing-decomposition, which runs next and gets its own cold review.
+  If structural ideas come up during brainstorming, note them in the spec as input
+  for that phase — don't commit to them here. A spec that pre-decides the modules
+  hands the design gate a fait accompli.
 
 **Working in existing codebases:**
 
@@ -130,10 +134,11 @@ After the spec review loop passes, ask the user to review the written spec befor
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
-**Implementation:**
+**Structure:**
 
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
+- Invoke the designing-decomposition skill — module boundaries are decided there,
+  under their own review gate, before any plan is written
+- Do NOT invoke any other skill. designing-decomposition is the next step.
 
 ## Key Principles
 

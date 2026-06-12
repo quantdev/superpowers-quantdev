@@ -212,6 +212,10 @@ You MUST complete each phase before proceeding to the next.
 
    This is NOT a failed hypothesis - this is a wrong architecture.
 
+   **If the outcome is structural** (new modules, moved boundaries, changed
+   interfaces): the redesign goes through superpowers:designing-decomposition —
+   a fix that rearchitects is a design, and gets a design's review.
+
 ## Red Flags - STOP and Follow Process
 
 If you catch yourself thinking:

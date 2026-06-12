@@ -12,6 +12,7 @@ Task tool (general-purpose):
 
   DESCRIPTION: [task summary, from implementer's report]
   PLAN_OR_REQUIREMENTS: Task N from [plan-file]
+  DESIGN_DOC: [path to approved decomposition design, from the plan header — omit if gate was skipped]
   BASE_SHA: [commit before task]
   HEAD_SHA: [current commit]
 ```
@@ -20,6 +21,7 @@ Task tool (general-purpose):
 - Does each file have one clear responsibility with a well-defined interface?
 - Are units decomposed so they can be understood and tested independently?
 - Is the implementation following the file structure from the plan?
+- **Conformance:** if a DESIGN_DOC is provided, does the change match the approved decomposition — code in its designed module, dependencies in declared directions? Evidence first: list what the change actually touches, then judge. Structural drift is a Critical finding (the fix may be amending the design, but that decision belongs upstream, not silently in code).
 - Did this implementation create new files that are already large, or significantly grow existing files? (Don't flag pre-existing file sizes — focus on what this change contributed.)
 
 **Code reviewer returns:** Strengths, Issues (Critical/Important/Minor), Assessment

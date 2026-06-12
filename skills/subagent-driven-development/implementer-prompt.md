@@ -54,6 +54,21 @@ Task tool (general-purpose):
     - In existing codebases, follow established patterns. Improve code you're touching
       the way a good developer would, but don't restructure things outside your task.
 
+    ## Hermetic Rules
+
+    For every unit you write:
+    1. **Side-effect-free:** don't mutate arguments or outside state; same inputs →
+       same output; effects at the edges. Local mutation that never escapes is fine.
+    2. **Tell-Don't-Ask:** if you're pulling data out of an object to decide on it,
+       the decision belongs in the object.
+    3. **Minimal surface:** package-private by default; nothing public without a
+       caller that needs it; never return live internal mutable references.
+
+    Justify any violation in your report — an unjustified one is a bug; a justified
+    one (hot-path mutation, contained and named) is a decision. Do not claim
+    cohesion, coupling, or context integrity — those need context you don't have;
+    reviewers own them.
+
     ## When You're in Over Your Head
 
     It is always OK to stop and say "this is too hard for me." Bad work is worse than
