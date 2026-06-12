@@ -17,7 +17,10 @@ doc** — across the module table, and count what it touches.
 
 **Pass-bias guard.** Reviewers default to PASS. If you find zero issues in a
 multi-module design, re-examine the two largest modules before issuing PASS, and
-say that you did. A doc missing any required answer is an automatic BLOCK.
+say that you did. A doc missing any required answer is an automatic BLOCK — the
+required answers: (1) modules and what each owns, (2) why not the obvious
+decomposition, (3) what crosses each boundary, (4) a future change it survives,
+(5) how it fits what exists, (6) simplest slice and deferrals.
 
 ## Output
 
